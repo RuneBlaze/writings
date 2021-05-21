@@ -1,0 +1,175 @@
+Title         : FASTRAL Study Plan
+Author        : Baqiao Liu
+<!--
+Logo          : True
+-->
+
+[TITLE]
+
+# Goal & Algorithm Description
+
+The goal is to use the idea of FASTRAL and adopt it to this new method "FASTRAL-Pro" and evaluate whether it can scale
+to large datasets while being dramatically faster than ASTRAL-Pro, and potentially be more accurate than A-Pro.
+
+## FASTRAL-Pro
+
+The original procedure of FASTRAL (taken from the original paper) works as follows. Assuming input
+as as a set of gene trees $G$ where $S$ is the set of species labels.
+
+ 1. Construct a collection of sub-samples of the gene trees in $G$
+ 2. For each sub-sample, run some summary method $M$ to obtain a tree on $S$, $S$ the taxon set
+ 3. Let $X$ be all bipartitions appearing in any tree obtained in step 2
+ 4. Run ASTRAL on the pair $(G, X)$
+
+In the GDL setting, the inputs are now mul-trees $G$ along with a taxon set $S$. This implies that first, the summary
+method $M$ must be able to handle mul-trees. Some methods that can do this are ASTRID-DISCO, ASTRAL-Pro, etc.. Second,
+due to gene loss, a subsample might not cover all the taxa and thus its bipartitions can be useless. This motivates
+a way to sample while ensuring the subsampled mul-trees represent all taxa, which I will refer to as obtaining a
+"well-formed sample" of the input mul-trees. I will describe my proposed way to obtain a well-formed sample near the end
+of this subsection. For now, due to the good accuracy of ASTRID-DISCO
+
+One immediate modification for this to work on the input
+of a set of gene trees under both ILS and GDL $G$ is that, since the trees are now under GDL, we need to use some summary method
+that works under GDL, and also we need to use ASTRAL-Pro instead of ASTRAL in the final step. One less obvious modification
+that needs to be implemented is that, the subsample need to represent all taxons (some taxons might be missing
+due to gene loss), or else the tree obtained in step 2
+will not cover the entire taxon set and thus its bipartitions will be useless. I will describe a way to sample s.t.
+the subsample obtained will be well formed.
+
+I propose at this stage of the investigation, to use the following naive strategy to ensure that in step 2, the subsample represents all taxons:
+
+ 2. (Modified) For each sub-sample, check if the sub-sample covers the taxon set, if not, resample up to five times. If
+    the subsample still does not cover all the taxon set, resample with increasing size until it covers the taxon set.
+    Run some summary method (that works with GDL) $M$ to obtain a tree on $S$, $S$ the taxon set
+
+Thus the abstract FASTRAL-Pro algorithm that I propose to investigate can be described as follows:
+
+ 0. (Input: a set of gene family trees $G$ under GDL and ILS on taxon set $S$)
+ 1. Construct a collection of sub-samples of the gene trees in $G$
+ 2. (Modified) For each sub-sample, check if the sub-sample covers the taxon set, if not, resample up to five times. If
+    the subsample still does not cover all the taxon set, resample with increasing size until it covers the taxon set.
+    Run some summary method (that works with GDL) $M$ (not necessarily the same $M$ acorss different subsamples) to obtain a tree on $S$, $S$ the taxon set
+ 3. Let $X$ be all bipartitions appearing in any tree obtained in step 2
+ 4. Run ASTRAL-Pro on the pair $(G, X)$
+ 
+The question that immediately arises is the choice of the summary method. The immediate candidate is ASTRID-decompose,
+since it runs fast and has shown good accuracy, but is not known to be statistically consistent. An analogue of the
+statistical consistency theorem in the FASTRAL paper can be written as follows to show more insight:
+
+~ Theorem
+Assume that the random sampling step of FASTRAL-Pro generates $m$ sub-samples, such that there is
+at least one subsample $S_i$ whose size also increases to infinity with the number of genes.
+Assume also that for that subsample the summary method used, $M$ is statistically consistent under GDL. Then,
+FASTRAL-Pro is statistically consistent under the the GDL model when used with $M$ and this sampling strategy.
+~
+
+This implies that if statistical consistency is desired for FASTRAL-Pro using
+ASTRID-decompose, then we can just run another consistent method $M'$ on one of the size-increasing subsamples and add it to
+the bipartitions $X$ while continuing to use ASTRID-decompose on all other subsamples. This way FASTRAL-Pro will be
+statistically consistent under correct rooting and tagging, just like ASTRAL-Pro. (Other methods like ASTRAL-multi
+can also be used but I am not sure it is necessary)
+
+## Subsampling Strategy & Concrete Pipeline
+
+At this stage of the investigation, I think just testing analogues of the FASTRAL sampling strategy can be interesting
+as a first try. I also include a variant that is trivially statistically consistent as a baseline:
+
+ 1. (original FASTRAL, variable size): generate 51 samples, one containing all gene trees,
+ 10 containing 50% of the gene trees, 20 containing 25% of the gene trees, 20 containing 10% of the gene trees
+ 2. (original FASTRAL, same size): generate 51 samples each containing 25% of the gene trees
+ 3. (my own, absurd example): generate 2 samples, one containing all gene trees, one containing 10% of the gene trees
+ 
+To ensure accuracy and speed, the choice of the summary method will be ASTRID-decompose, but for statistical
+consistency, one smallest subsample (after ensuring that this subsample covers the entire taxon set)
+will be also fed
+to ASTRAL-Pro with the resulting tree's bipartitions added to the constraint set $X$. This choice of methods (ASTRID-decompose
+along with ASTRAL-Pro to ensure statistical consistency) will be what is referred as FASTRAL-Pro below since I think this
+will capture all of speed, accuracy (brought by ASTRID-decompose) and statistical consistency (ASTRAL-Pro).
+
+
+# Datasets
+
+I plan to only use the following three datasets for the "training" phase. The first "default" dataset
+is designed to have moderate GTEE, ILS, and gene duplication and loss and serve as a good default benchmark.
+The second "default-dl" dataset is a variant of the default dataset multiplying the duplication and loss rate both by 10,
+and this should lead to many species not represented in each gene tree due to gene loss. The third "default-iid" dataset
+is a variant of the default dataset under the $M_{iid}$ model of missing taxa with 50% deletion rate.
+
+
+| Dataset Name                     | default  |
+|----------------------------------|----------|
+| sources of gene tree discordance | ILS, GDL |
+| number of species                | 100      |
+| mean gene tree estimation error  | 43.7%    |
+| average discordance              | 20%      |
+| duprate = lossrate               | 5e-10    |
+| # of gene trees used             |100, 500, 1000|
+
+| Dataset Name                     | default-dl  |
+|----------------------------------|----------|
+| sources of gene tree discordance | ILS, GDL |
+| number of species                | 100      |
+| mean gene tree estimation error  | to be calculated    |
+| average discordance              | to be calculated      |
+| duprate = lossrate               | 5e-9    |
+| # of gene trees used             |100, 500, 1000|
+
+| Dataset Name                     | default-iid      |
+|----------------------------------|------------------|
+| sources of gene tree discordance | ILS, GDL         |
+| number of species                | 100              |
+| mean gene tree estimation error  | to be calculated |
+| average discordance              | 20%              |
+| duprate = lossrate               | 5e-10            |
+| # of gene trees used             |100, 500, 1000    |
+| taxa deletion rate                                 |    50%              |
+
+
+For testing, I plan to use all datasets from the ASTRID-decompose paper for accuracy comparisons.
+To be more specific, I plan to use the following datasets (# of genes
+100, 500, 1000) for testing:
+
+ - Experiment 1 datasets of the GDL paper "varying degree of GDL and
+ILS, relative probabilities of gene duplication and loss, sequence length per
+gene, and number of genes." Also the 1000 species analogue versions of the datasets.
+ - All i.i.d. variants of the training dataset (deletion rate 20%, 50%, 100%)
+
+# Methods
+
+ - FASTRAL-Pro (three sampling strategies), with flags `uns` for ASTRID (the current default), which otherwise proceeds as described in Section 1.
+ - A-Pro, default flags with `-t 0` (so in the end with flags `-i $genetrees -o $output -t 0`)
+ - ASTRID-decompose, with flags `uns` for ASTRID
+
+# Experiments
+
+I plan to run the following experiments:
+
+
+
+ 1. Run all methods on dataset "default" and "default200". The questions that I want to have answers for are listed below:
+  - Question 1: the general accuracy of FASTRAL-Pro under moderate number of species and moderate conditions (ILS, GDL)
+  -- is it comparable to ASTRAL-Pro? Will it be possible for it to consistently surpass the accuracy of ASTRID-decompose?
+  - Hypothesis to the question: it will achieve similar accuracy (not significantly better or worse) compared to ASTRAL-Pro. If not,
+  I think what I will learn from this is that the sampling strategy is not working well. It should have no significantly better accuracy
+  or worse accuracy than ASTRID-decompose (based on the results from FASTRAL), but if it is significantly worse, this might
+  show that sampling on very small sizes of the input decreases the accuracy by introducing bipartitions of inaccurate trees and I need to test only sampling large subsets
+  of the input gene trees.
+  - Question 2: Will there be a significant running time improvement in both the 100 species and 200 species setting?
+   - Hypothesis to Q2: There will be a significant running time improvement in both the 100 species and 200 species setting. If not,
+  I think this will show that ASTRAL-Pro is having a large overhead and I need to figure out a smarter sampling strategy.
+  - Question 3: Will my "absurd" sampling strategy (only sample two subsets, one the entire set of gene trees fed to ASTRID-decompose, one 10% of the gene trees fed to ASTRAL-Pro) beat the other sampling strategies for FASTRAL-Pro, and achieve the same accuracy as ASTRID-decompose?
+  - Hypothesis to Q3: I hope not, since the additional bipartitions should only expand the search space and help
+  ASTRAL-Pro discover more optimal trees. If they don't help at all, this might indicate that I need to either
+  devise very sophisticated sampling strategies, or realize that sampling does not really work.
+
+2. Run all methods on the GDL comparison datasets varying DL rate and ILS. The obvious questions are as follows:
+   - Question 1: the general accuracy of FASTRAL-Pro under varying DL rate -- is it better or worse than A-Pro under high GDL?
+   - Hypothesis: I think it will be similar, and I don't know how to interpret any significant differences yet.
+   - Question 2: the general accuracy of FASTRAL-Pro under varying ILS -- is it better or worse than A-Pro under high ILS?
+   - Hypothesis: in the original FASTRAL paper, they reported a relative advantage of FASTRAL under high ILS compared to ASTRAL. I expect to see it appear here too.
+
+3. Run all methods on the GDL comparison datasets of 1000 species.
+   - Question 1: does FASTRAL perform very similar in accuracy compared to A-Pro while having drastically lower running time?
+   - Hypothesis: it will be comparatively very fast while similar in accuracy, otherwise I suspect the sampling strategy is hampering its accuracy, and I need to rethink of a better sampling strategy.
+
+[reference manual]: http://research.microsoft.com/en-us/um/people/daan/madoko/doc/reference.html  "Madoko reference manual"
