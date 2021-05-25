@@ -47,7 +47,7 @@ some predetermined fast su, given the input mul-trees $G$ on taxon set $S$, FAST
 
 
 ~ Framed
-**Algorithm 2: FASTRAL-Pro**
+**Algorithm 2: FASTRAL-Pro (Input: $(G, S)$)**
 
  1. Run the sampling method. Let $S$ be the subsamples obtained by the subsampling method $f$, i.e. $S \gets f(G)$.
  Ensure that for each subsample $R \in S$, $R$ is well formed; otherwise modify $R$ using the method described above
@@ -202,7 +202,7 @@ will be tested on for stress-testing scalability of the methods.
 
 # Methods
 
- - FASTRAL-Pro (all variants described), with flags `ujfNnSs` for ASTRID (all variants, in total 8)
+ - FASTRAL-Pro (all variants described, 4 subsampling strategy, 2 variants with or without MiniNJ, 4 $s$ configuration, in total 32 variants), with flags `ujfNnSs` for ASTRID (all variants, in total 8)
  - A-Pro, default flags with `-t 0` (so in the end with flags `-i $genetrees -o $output -t 0`)
  - ASTRID-DISCO, with flags `uns` for ASTRID
 
@@ -215,7 +215,7 @@ will be tested on for stress-testing scalability of the methods.
 | memory                   | 16Gb (up to the limit if memory issues occur)                  |
 | cores                    | 4 (for ASTRAL-Pro)    |
 
-The experiments will just be running each method (all FASTRAL-Pro variants)
+The experiments will just be running each method (all FASTRAL-Pro variants (32 variants), A-Pro, ASTRID-DISCO) on all datasets.
 
 ## Experiment 1
 
@@ -235,8 +235,7 @@ Run all methods on the GDL comparison paper's ILS and GTEE dataset to test robus
 
 ## Experiment 4
 
-Run all methods on 500 taxa, 1000 taxa analogues of the above datasets to mainly test running time differences.
-
+Run all methods on 500 taxa, 1000 taxa analogues of the above datasets to detect scalability improvements.
 
  <!--
 1. Run all methods on dataset "default" and "default200". The questions that I want to have answers for are listed below:
