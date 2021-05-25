@@ -215,7 +215,7 @@ will be tested on for stress-testing scalability of the methods.
 | memory                   | 16Gb (up to the limit if memory issues occur)                  |
 | cores                    | 4 (for ASTRAL-Pro)    |
 
-
+The experiments will just be running each method (all FASTRAL-Pro variants)
 
 ## Experiment 1
 
