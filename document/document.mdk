@@ -180,10 +180,10 @@ in [#subsample].
 | # of gene trees used             |100, 500, 1000|
 
 
-| Dataset Name                     | default-iid      |
+| Dataset Name                     | default500      |
 |----------------------------------|------------------|
 | sources of gene tree discordance | ILS, GDL         |
-| number of species                | 100              |
+| number of species                | 500              |
 | mean gene tree estimation error  | to be calculated |
 | average discordance              | 20%              |
 | duprate, lossrate               | 5e-10, 5e-10            |
@@ -197,7 +197,8 @@ of conditions:
 
  - Experiment 1 datasets of the GDL paper "varying degree of GDL and
 ILS, relative probabilities of gene duplication and loss, sequence length per
-gene, and number of genes." Also the 1000 species analogue versions of the datasets.
+gene, and number of genes." Also the 1000 species analogue versions of the datasets
+will be tested on for stress-testing scalability of the methods.
 
 # Methods
 
@@ -207,11 +208,11 @@ gene, and number of genes." Also the 1000 species analogue versions of the datas
 
 # Experiments
 
-| Experiment Configuration |                       |
+| Experiment Environment |                       |
 |--------------------------|-----------------------|
 | hardware                 | U of I Campus Cluster |
-| time limit               | 2 hours per replicate |
-| memory                   | 16Gb                  |
+| time limit               | 4 hours per replicate |
+| memory                   | 16Gb (up to the limit if memory issues occur)                  |
 | cores                    | 4 (for ASTRAL-Pro)    |
 
 
