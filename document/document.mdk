@@ -282,6 +282,7 @@ will be tested on for stress-testing scalability of the methods.
  - FASTRAL-Pro (and FASTRAL-FastMulRFS, FASTRAL-multi)
  - A-Pro, default flags with `-t 0` (so in the end with flags `-i $genetrees -o $output -t 0`)
  - ASTRID-DISCO, with flags `uns` for ASTRID
+ - (optional, for E4) FastMulRFS, A-multi
 
 # Experiments
 
@@ -305,8 +306,8 @@ There are several parameters that should be determined by experiments. I outline
 
 I think the experiments can be done in the following order:
 
- - E1: determine the best subsampling strategy: vary $s$ on $26, 51, 101, 201$ and the subsampling strategy (among the four proposed).
- Run FASTRAL-Pro (i.e. using ASTRAL-Pro in the final step) with this $s$ and strategy and choose the best for the rest of the experiments.
+ - E1: determine the best subsampling strategy along with the # of subsamples: vary $s$ (# of subsamples) among $26, 51, 101, 201$ and the subsampling strategy (among the four proposed).
+ Run FASTRAL-Pro (i.e. using ASTRAL-Pro in the final step) with this $s$ and strategy; choose the best setting for the rest of the experiments.
     - I am actually not sure if I should first fix a default $s$ or default strategy to reduce the running time of the experiments.
     I am afraid of the case where subsampling strategies have different optimal $s$, the # of subsamples, but this can definitely be broken down into two experiments,
     for example fixing a default $s = 51$ to first test the subsampling strategies.
@@ -315,14 +316,15 @@ I think the experiments can be done in the following order:
  - E3: determine the best ASTRID flags: test whether "ujfNnSs" improves accuracy. Maybe even if it does improve accuracy by a marginal amount,
  do not change the flags since "ujfNnSs" is not the default for ASTRID and is $O(n^3)$, but might be something worth exploring
  - E4: effect of different final-step algorithms: use the previous chosen best parameters, test the accuracy and running time, respectively,
- of FASTRAL-Pro, FASTRAL-FastMulRFS (for the lack of a better name), and FASTRAL-multi
+ of FASTRAL-Pro, FASTRAL-FastMulRFS (for the lack of a better name), and FASTRAL-multi. Compare them also to the accuracy
+ and running time of FastMulRFS, A-multi.
  - E5: effect of incorporating statistically consistent pipeline: use the easy modification that makes
  the pipeline (conditionally) statistically consistent (i.e. run the final-step algorithm on a small size-increasing
  subset of the input. This way the statistical consistency (conditional or not) of the final-step algorithm is preserved
  in the pipeline) and see if this modification impacts the accuracy or not.
   - I am not sure if this statistical consistency modification can just be left in the discussions as a simple remark
-  , or I should actually conduct experiments like what I wrote here. I assume that experiments are useful and decided
-  to add it here. 
+  , or I should actually conduct experiments like what I wrote here. I assume that experiments carry some weight and
+  leave them here...
 
 
 
