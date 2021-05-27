@@ -47,7 +47,7 @@ some predetermined fast su, given the input mul-trees $G$ on taxon set $S$, FAST
 
 
 ~ Framed
-**Algorithm 2: FASTRAL-Pro (Input: $(G, S)$)**
+**Algorithm 2: FASTRAL-Pro (and variants) (Input: $(G, S)$)**
 
  1. Run the sampling method. Let $S$ be the subsamples obtained by the subsampling method $f$, i.e. $S \gets f(G)$.
  Ensure that for each subsample $R \in S$, $R$ is well formed; otherwise modify $R$ using the method described above
@@ -56,11 +56,46 @@ some predetermined fast su, given the input mul-trees $G$ on taxon set $S$, FAST
  is ASTRID-DISCO. This $M$ is not necessarily
  the same across different samples) on $R$, thereby obtaining a species tree for each sub-sample.
  3. Let $X$ be all bipartitions appearing in any tree obtained in step 2
- 4. Run ASTRAL-Pro on the pair $(G, X)$
+ 4. Run ASTRAL-Pro (or ASTRAL-Multi, FastMulRFS) on the pair $(G, X)$
 ~
 
 The two free parameters of the algorithm described above are the subsampling method used, and also
 the summary method. They will be further specified immediately in Section [#subsample].
+
+## Generalization of FASTRAL-Pro
+Fastral-Pro can effectively be generalized. Instead of being set to always run some species-tree inference
+algorithm on subsamples, it can be set to produce reasonably high quality singly-labeled species trees using the information
+from the input gene trees. There are a couple of ways to do this.
+
+Recall the FastMulRFS preprocessing algorithm (taken verbatim from the original FastMulRFS paper):
+~ Framed
+**FastMulRFS Preprocessing**
+
+Given a multree $M \in P$, we collapse internal edges with 
+some species labeling leaves on both sides of the edge, 
+denoting the result $X_M$. We then delete all but one leaf with each species label, denoting the result $M_{X}={R}_{X_M}$.
+We define $P_X:=\left\{M_{X}: M \in P\right\}$
+~
+
+Given this method, with any input mul-tree $M$ that have all species labels, a (very probably unresolved) tree $M_X$ can be
+obtained. This can be resolved either randomly or possibly via ASTRAL-III's way of resolving polytomies.
+
+This motivates this generalized FASTRAL construction that works on mul-trees:
+
+~ Framed
+**Algorithm 3: FASTRAL-Pro (generalized) (Input: $(G, S)$)**
+
+ 1. Assume some black-box algorithm $O$ that can be queried for a finite number of times, and $O$ takes a specific subset of $G$ and can "cheaply" (both in running time and memory)
+  produce a "reasonable-quality" tree $T$. Assume some constrained optimization algorithm $A$ that takes input $G$ a set of mul-trees
+  along with $X$ a bipartition constraint set.
+    a. Example of a step from $O$: subsample and summary, where a specific subsample of $G$ is taken and a summary method is run on this subsample
+    b. Example of a step from $O$: FastMulRFS preprocessor, where an input mul-trees that contain all species labels is converted into
+    a singly labeled tree via FastMulRFS preprocessing
+ 2. Query $O$ for some finite times
+ 3. Let $X$ be all bipartitions appearing in any tree obtained in step 2
+ 4. Run $A$ on the pair $(G, X)$
+~
+
 
 ## Subsampling Strategies & Summary Methods {#subsample}
 
@@ -86,11 +121,20 @@ While the default summary method used is ASTRID-DISCO, the most accurate GDL
 species tree estimation pipeline that is also very fast, additional
 methods can be run on the subsamples to generate trees. Right now the only fast
 alternative of
-ASTRID-DISCO seems to be MiniNJ, hence motivating the following variant:
+ASTRID-DISCO seems to be MiniNJ, hence motivating a variant using MiniNJ. The other variants
+also provide "cheap" ways to obtain trees:
 
  - (variant a, MiniNJ): also run MiniNJ on the subsamples in addition to running
  other methods. The bipartitions of the MiniNJ tree are also added to the constraint
  set $X$.
+ - (variant b, FastMulRFS): consider the generalized setting (where not necessarily every tree must come from
+ a summary method running on a subsample). For each input mul-tree that contains all species labels,
+ produce a tree for $X$ using the FastMulRFS preprocessing strategy. Note that polytomies must be resolved
+ via some method (either ASTRAL's polytomy resolving strategy or randomly resolved)
+ - (variant c, using trees from all ASTRID iterations): consider the generalized setting (same as above,
+ where not all trees must be a direct output of some summary method). The ASTRID tree from each intermediate ASTRID iteration
+ is taken and its bipartitions added to $X$ during ASTRID-DISCO execution.
+ 
 
 <!--
 For small input sizes (# gene trees < 50), if willing to suffer drastically longer running time to trade for
@@ -104,7 +148,7 @@ accuracy, instead of only running ASTRID-DISCO, the following pipeline can be us
  trees to the constraint set $X$.
 -->
 
-For ASTRID-DISCO, the flag that will be used is `ujfNnSs` (UPGMA*, NJ, FastME, NJ+NNI, FastME+NNI, NJ+NNI+SPR, FastME+NNI+SPR),
+For ASTRID-DISCO, the flag that will be used is either `uns` (the default) or `ujfNnSs` (UPGMA*, NJ, FastME, NJ+NNI, FastME+NNI, NJ+NNI+SPR, FastME+NNI+SPR),
 which in previous experiments seem to lead to somewhat better accuracy.
 
 <!--
@@ -121,15 +165,45 @@ can definitely be done, but I am not sure the running time is worth it.)
 ## Statistical Consistency
 
 At this stage of the investigation, consistency seems not be of the focus, but the analogue of the statistical
-consistency theorem of the original paper can be written below:
+consistency theorem of the original paper can be written below (now generalized):
+
+~ Definition
+A method is called conditionally statistically consistent under $P$ if hypothesis $P$ implies that this method is statistically consistent.
+Note that if $P = \top$ this implies that this method is unconditionally statistically consistent.
+~
+
+The theorem can be written below:
 
 ~ Theorem
-Assume that the random sampling step of FASTRAL-Pro generates $m$ sub-samples, such that there is
+
+Assume some constrained optimization summary method that works under GDL $A$ that is conditionally statistically consistent
+under $P$. Assume that some (not necessarily different) constrained optimization summary method that works under GDL $B$
+that is conditional statistically consistent under $Q$. Then the consistency of Fastral-$A$-$B$ ($A$ is
+the method that runs on the subsamples, $B$ the method that runs in the final step) can be described below.
+  
+Assume that the random sampling step of FASTRAL-$A$-$B$ generates $m$ sub-samples, such that there is
 at least one subsample $S_i$ whose size also increases to infinity with the number of genes.
-Assume also that for that subsample the summary method used, $M$ is statistically consistent under GDL with
-correct rooting and tagging. Then,
-FASTRAL-Pro is statistically consistent assuming correct rooting and tagging
-under the the GDL model when used with $M$ and this sampling strategy.
+Assume that $A$ is the summary method that runs on subsamples. Assume that $B$ is the summary method that runs
+on the final constraint set with the original input. Then
+FASTRAL-$A$-$B$ is conditionally statistically consistent under $P \land Q$
+under the the GDL model.
+~
+
+~ Corollary
+Fix some conditionally statistically consistent method $M$ under $P$. If in some variant of FASTRAL, the subsampling step a size-increasing subset
+is fed to $M$ and its bipartitions added to $X$, then this variant of FASTRAL is conditional statiscally consistent under $P$.
+~
+
+~ Example
+(Not sure at all if this is useful, but seems at least significant to be jotted down.)
+
+Given any (not necessarily statistically consistent in any way) summary method that works on GDL $M$, the following modification
+of $M$ is statistically consistent. Note we require species mapping $m$ for ASTRAL-multi to properly function:
+
+ 1. Run $M$ on input $(G, S)$ ($G$ set of mul-trees, $S$ species labels). Add the bipartitions of the result tree to $X$.
+ 2. Run ASTRAL-multi on input $(G', m)$ where $G'$ is a randomly sampled subset of $G$ containing 0.1% of $G$. Add the bipartitions
+ of the result to $X$
+ 3. Run ASTRAL-multi on $(G, X, m)$. Return the result.
 ~
 
 This implies that if statistical consistency is desired for FASTRAL-Pro using
@@ -137,13 +211,11 @@ ASTRID-decompose, then we can just run another consistent (assuming correct
 rooting and tagging) method $M'$ on one of the size-increasing subsamples and add it to
 the bipartitions $X$ while continuing to use ASTRID-decompose on all other subsamples. This way FASTRAL-Pro will be
 statistically consistent under correct rooting and tagging, just like ASTRAL-Pro.
-(Other methods like ASTRAL-multi can also be used, but I am not sure at
-this stage it is a good idea. I can always run follow-up experiments using
-ASTRAL-multi.)
 
 
 # Datasets
 
+<!--
 I plan to only use the following three datasets for the "training" phase. The first "default" dataset
 is designed to have moderate GTEE, ILS, and gene duplication and loss and serve as a good default benchmark
 to make sure that the accuracy of FASTRAL-Pro is adaquete given average conditions.
@@ -154,12 +226,15 @@ The final dataset is a dataset with 500 species (I am not sure if I should
 up this to 1000). ASTRAL-Pro failed once in the DISCO study given 1001 species,
 so this condition hopefully brings out scalability issues from ASTRAL-Pro,
 and through this condition the scalability of FASTRAL-Pro can be observed.
+-->
 
 <!--
 The low number gene tree conditions (10, 20, 50) are for testing the "small input size strategy" as described
 in [#subsample].
 -->
 
+The following dataset shows condition where too many gene trees are present and the biparition space becomes large.
+(I am not sure if I should add-in conditions where I vary the dup-loss rate.)
 
 | Dataset Name                     | default  |
 |----------------------------------|----------|
@@ -168,7 +243,8 @@ in [#subsample].
 | mean gene tree estimation error  | 43.2%    |
 | average discordance              | 20%      |
 | duprate, lossrate               | 5e-10, 5e-10    |
-| # of gene trees used             |100, 500, 1000|
+| # of gene trees used             |1000, 10000|
+<!--
 
 | Dataset Name                     | default-dup  |
 |----------------------------------|----------|
@@ -189,6 +265,7 @@ in [#subsample].
 | duprate, lossrate               | 5e-10, 5e-10            |
 | # of gene trees used             |100, 500, 1000    |
 | taxa deletion rate               | 50%              |
+-->
 
 
 For testing, in addition to the datasets listed above, the following dataset
@@ -202,7 +279,7 @@ will be tested on for stress-testing scalability of the methods.
 
 # Methods
 
- - FASTRAL-Pro (all variants described, 4 subsampling strategy, 2 variants with or without MiniNJ, 4 $s$ configuration, in total 32 variants), with flags `ujfNnSs` for ASTRID (all variants, in total 8)
+ - FASTRAL-Pro (and FASTRAL-FastMulRFS, FASTRAL-multi)
  - A-Pro, default flags with `-t 0` (so in the end with flags `-i $genetrees -o $output -t 0`)
  - ASTRID-DISCO, with flags `uns` for ASTRID
 
@@ -215,7 +292,42 @@ will be tested on for stress-testing scalability of the methods.
 | memory                   | 16Gb (up to the limit if memory issues occur)                  |
 | cores                    | 4 (for ASTRAL-Pro)    |
 
-The experiments will just be running each method (all FASTRAL-Pro variants (32 variants), A-Pro, ASTRID-DISCO) on all datasets.
+There are several parameters that should be determined by experiments. I outline them below along with their default settings:
+
+ - ASTRID flags: uns or ujfNnSs (default: "uns")
+ - subsample size (determined first, no default)
+ - subsampling strategy (determined first, no default)
+ - variants: whether using FastMulRFS preprocessing on "full" trees, adding ASTRID iteration trees, or MiniNJ will help. (default: no variant, just use ASTRID-DISCO trees)
+ - The choice of the algorithm used in the final step (final-step algorithm), among: A-Pro, A-multi, and FastMulRFS. I think no matter which one has the best accuracy or scalability, they should all be tested since
+ they have different theoretical properties (potentially FastMulRFS is just "bad" in both accuracy and running time and can be
+ left out, but at least A-Pro and A-multi warrant attention, because A-multi is unconditionally statistically consistent
+ and A-Pro is the most practical while conditionally consistent). The default is A-Pro.
+
+I think the experiments can be done in the following order:
+
+ - E1: determine the best subsampling strategy: vary $s$ on $26, 51, 101, 201$ and the subsampling strategy (among the four proposed).
+ Run FASTRAL-Pro (i.e. using ASTRAL-Pro in the final step) with this $s$ and strategy and choose the best for the rest of the experiments.
+    - I am actually not sure if I should first fix a default $s$ or default strategy to reduce the running time of the experiments.
+    I am afraid of the case where subsampling strategies have different optimal $s$, the # of subsamples, but this can definitely be broken down into two experiments,
+    for example fixing a default $s = 51$ to first test the subsampling strategies.
+ - E2: determine the best variant: see if any of the variants MiniNJ (also run MiniNJ on the subsamples), FastMulRFS preprocessing (run FastMulRFS preprocessing on the full trees), and adding ASTRID iteration trees significantly improves
+ the algorithm. If so, change the algorithm to incorporate the variant. 
+ - E3: determine the best ASTRID flags: test whether "ujfNnSs" improves accuracy. Maybe even if it does improve accuracy by a marginal amount,
+ do not change the flags since "ujfNnSs" is not the default for ASTRID and is $O(n^3)$, but might be something worth exploring
+ - E4: effect of different final-step algorithms: use the previous chosen best parameters, test the accuracy and running time, respectively,
+ of FASTRAL-Pro, FASTRAL-FastMulRFS (for the lack of a better name), and FASTRAL-multi
+ - E5: effect of incorporating statistically consistent pipeline: use the easy modification that makes
+ the pipeline (conditionally) statistically consistent (i.e. run the final-step algorithm on a small size-increasing
+ subset of the input. This way the statistical consistency (conditional or not) of the final-step algorithm is preserved
+ in the pipeline) and see if this modification impacts the accuracy or not.
+  - I am not sure if this statistical consistency modification can just be left in the discussions as a simple remark
+  , or I should actually conduct experiments like what I wrote here. I assume that experiments are useful and decided
+  to add it here. 
+
+
+
+<!--
+The experiments will just be running each method (all FASTRAL-Pro variants, A-Pro, ASTRID-DISCO) on all datasets.
 
 ## Experiment 1
 
@@ -236,6 +348,7 @@ Run all methods on the GDL comparison paper's ILS and GTEE dataset to test robus
 ## Experiment 4
 
 Run all methods on 500 taxa, 1000 taxa analogues of the above datasets to detect scalability improvements.
+-->
 
  <!--
 1. Run all methods on dataset "default" and "default200". The questions that I want to have answers for are listed below:
