@@ -275,8 +275,8 @@ The experiments will be done in the following order. See the table above for the
   - **E1**: fix other values to be the default; explore the best subsampling strategy -- at most two will be fixed
   - **E2**: fix other values; explore the choice of $s$ -- at most two will be fixed
   - **E3**: explore what summary method to use: choose the best one
-  - **E4**: explore what constrained optimization method to use: at this stage there is no need to choose. The results
-  can be interesting.
+  - **E4**: explore what constrained optimization method to use: at this stage there is no need to fix this parameter but to
+  report the results.
 
 
 
