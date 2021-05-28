@@ -45,8 +45,11 @@ covers $G'$ to the sample.
 Algorithm for making sure that subsamples are complete:
 
  1. (preprocessing) Initiate a set of covers of $S$, $G'$. First take all the trees from $G$ where
-the tree represents all species
- 2. 
+the tree represents all species and let these be the singleton covers; add them to $G'$. If $|G'| \geq \frac{|G|}{20}$,
+we are done with preprocessing. Otherwise, repeatedly obtain a minimal cover $C$
+of $S$ from $G - G'$ add add the cover to $G'$ until $|G'| \geq \frac{|G|}{20}$.
+ 2. During subsampling, if a subsample $R$ is incomplete, take a random $C \in G'$
+ and randomly replace $|C|$ trees in $R$
 ~
 
 To put the concrete FASTRAL-Pro pipeline into words. Fix some sampling method $f$, not necessarily ensuring
