@@ -41,6 +41,14 @@ and add the cover to $G'$ by $G' \gets G' \cup C$ until $|G'| \geq \frac{|G|}{20
 each sample, if it is not well-formed, modify the sample by adding this set of
 covers $G'$ to the sample.
 
+~ Framed
+Algorithm for making sure that subsamples are complete:
+
+ 1. (preprocessing) Initiate a set of covers of $S$, $G'$. First take all the trees from $G$ where
+the tree represents all species
+ 2. 
+~
+
 To put the concrete FASTRAL-Pro pipeline into words. Fix some sampling method $f$, not necessarily ensuring
 well-formedness of the subsamples, i.e. $f : G \to P(P(G))$ where $P(G)$ denotes the powerset of $G$, along with
 some predetermined fast su, given the input mul-trees $G$ on taxon set $S$, FASTRAL-Pro operates as follows: 
@@ -136,17 +144,6 @@ also provide "cheap" ways to obtain trees:
  is taken and its bipartitions added to $X$ during ASTRID-DISCO execution.
  
 
-<!--
-For small input sizes (# gene trees < 50), if willing to suffer drastically longer running time to trade for
-accuracy, instead of only running ASTRID-DISCO, the following pipeline can be used w.r.t the subsamples
-
- 5. (small input size strategy, accuracy focused): generate $s$ subsamples, one containing all the trees,
- $\frac{s - 1}{2}$ containing 75% of the trees, $\frac{s - 1}{2}$ containing 50% of the trees. For each subsample,
- instead of only running ASTRID-DISCO on the subsample, also run every competetive method that is not
- ASTRAL-Pro that works under GDL,
- so run SpeciesRax, CA-DISCO (IQTREE) on the subsample and add the bipartitions of the resulting
- trees to the constraint set $X$.
--->
 
 For ASTRID-DISCO, the flag that will be used is either `uns` (the default) or `ujfNnSs` (UPGMA*, NJ, FastME, NJ+NNI, FastME+NNI, NJ+NNI+SPR, FastME+NNI+SPR),
 which in previous experiments seem to lead to somewhat better accuracy.
@@ -215,57 +212,17 @@ statistically consistent under correct rooting and tagging, just like ASTRAL-Pro
 
 # Datasets
 
-<!--
-I plan to only use the following three datasets for the "training" phase. The first "default" dataset
-is designed to have moderate GTEE, ILS, and gene duplication and loss and serve as a good default benchmark
-to make sure that the accuracy of FASTRAL-Pro is adaquete given average conditions.
-The second "default-dup" dataset is a variant of the default dataset with
-high duplication rate with zero loss rate; ASTRAL-Pro failed to complete
-under the same high duplication-rate condition with 1001 species (according to the DISCO paper).
-The final dataset is a dataset with 500 species (I am not sure if I should
-up this to 1000). ASTRAL-Pro failed once in the DISCO study given 1001 species,
-so this condition hopefully brings out scalability issues from ASTRAL-Pro,
-and through this condition the scalability of FASTRAL-Pro can be observed.
--->
-
-<!--
-The low number gene tree conditions (10, 20, 50) are for testing the "small input size strategy" as described
-in [#subsample].
--->
-
 The following dataset shows condition where too many gene trees are present and the biparition space becomes large.
-(I am not sure if I should add-in conditions where I vary the dup-loss rate.)
+
 
 | Dataset Name                     | default  |
 |----------------------------------|----------|
 | sources of gene tree discordance | ILS, GDL |
 | number of species                | 100      |
-| mean gene tree estimation error  | 43.2%    |
+| mean gene tree estimation error  | ~43.2%    |
 | average discordance              | 20%      |
 | duprate, lossrate               | 5e-10, 5e-10    |
 | # of gene trees used             |1000, 10000|
-<!--
-
-| Dataset Name                     | default-dup  |
-|----------------------------------|----------|
-| sources of gene tree discordance | ILS, GDL |
-| number of species                | 100      |
-| mean gene tree estimation error  | to be calculated    |
-| average discordance              | to be calculated      |
-| duprate, lossrate               | 5e-9, 0    |
-| # of gene trees used             |100, 500, 1000|
-
-
-| Dataset Name                     | default500      |
-|----------------------------------|------------------|
-| sources of gene tree discordance | ILS, GDL         |
-| number of species                | 500              |
-| mean gene tree estimation error  | to be calculated |
-| average discordance              | 20%              |
-| duprate, lossrate               | 5e-10, 5e-10            |
-| # of gene trees used             |100, 500, 1000    |
-| taxa deletion rate               | 50%              |
--->
 
 
 For testing, in addition to the datasets listed above, the following dataset
@@ -290,16 +247,15 @@ will be tested on for stress-testing scalability of the methods.
 |--------------------------|-----------------------|
 | hardware                 | U of I Campus Cluster |
 | time limit               | 4 hours per replicate |
-| memory                   | 16Gb (up to the limit if memory issues occur)                  |
-| cores                    | 4 (for ASTRAL-Pro)    |
+| memory                   | 64G                  |
+| cores                    | 16 |
 
 There are several parameters that should be determined by experiments. I outline them below along with their default settings:
 
  - ASTRID flags: uns or ujfNnSs (default: "uns")
  - subsample size (determined first, no default)
  - subsampling strategy (determined first, no default)
- - variants: whether using FastMulRFS preprocessing on "full" trees, adding ASTRID iteration trees, or MiniNJ will help. (default: no variant, just use ASTRID-DISCO trees)
- - The choice of the algorithm used in the final step (final-step algorithm), among: A-Pro, A-multi, and FastMulRFS. I think no matter which one has the best accuracy or scalability, they should all be tested since
+ - The choice of the algorithm used in the final step (final-step algorithm), among: A-Pro, A-multi, ASTRAL-DISCO, and FastMulRFS. I think no matter which one has the best accuracy or scalability, they should all be tested since
  they have different theoretical properties (potentially FastMulRFS is just "bad" in both accuracy and running time and can be
  left out, but at least A-Pro and A-multi warrant attention, because A-multi is unconditionally statistically consistent
  and A-Pro is the most practical while conditionally consistent). The default is A-Pro.
