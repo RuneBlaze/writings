@@ -1,0 +1,84 @@
+Title         : Welcome
+Author        : You
+Logo          : True
+
+[TITLE]
+
+## 18.A.
+
+We prove a stronger proposition.
+
+~ Proposition
+For any deterministic algorithm, for any integer $h \geq 0$, there exists a tree (that is a valid rooted tree described in the problem)
+of height $h$ that forces the algorithm to read all $n = 5^h$ leaves. Moreover, we can force this algorithm to output either 1 or 0 at
+our choice.
+~
+
+~ Proof
+We prove by structural induction. We start with our strong induction base cases. Consider the base cases of $h = 0, 1$
+~
+
+## 18.B.
+
+We define the value of a non-leaf node to be the value returned by that node. Given a node $u$, if the value
+of that node is defined, we denote $v_u$ to be the value of that node. We first prove a lemma.
+
+~ Lemma
+Under the assumptions, fix $u$ as an arbitrary node, then $v_u$, considered as a random variable, takes value 1 and value 0
+with equal probability; that is, $\mathbb{P}[v_u = 1] = 0.5$.
+~
+
+~ Proof
+We proceed by structural induction on the tree. If $u$ is a leaf node, then by implicit assumption (hopefully, or else I don't know the distribution
+of the leaf node values and I have no way to properly calculate the constant $c$) $u$ satisfies our lemma. We now do structural induction,
+consider nodes $u_1, \ldots, u_5$ s.t. $w$ is the parent of all such $u_i$, with $u_i$ satisfying the lemma (i.e. they take value 1
+and value 0 with equal probabiltiy). Now we can calculate $\mathbb{P}[v_w = 1]$, which is equal to (the denominator is counting
+the total number of values all $u_i$ can take. The numerator is counting the total configurations of $u_i$ where 3 of them is 1; 4 of
+them is 1; 5 of them is 1).
+
+$$
+\frac{\binom{5}{3} + \binom{5}{4} + \binom{5}{5}}{2^5} = 0.5
+$$
+
+Then $\mathbb{P}[v_w = 0] = 0.5$, which satisfies our lemma. Our induction goal is proven. Thus the lemma is proven.
+~
+
+Let $f(h)$ denote the expected number of leaves evaluated by the algorithm considered (dependent on $h$, obviously). If $h = 0$, $f(h)$ takes
+the obviously value of $1$ (we have to look at that leaf/root!). Consider the case where $h > 0$, obviously, we have to in random order
+evaluate at least three children of the root (by definition of the algorithm), where each evaluation takes expectedly $f(h-1)$ leaf evaluations
+by property of expectation. In more details, we have the following cases:
+
+ 1. We (in random order. We always evaluate in random order in the children (i.e. shuffle the children and evaluate in order), this statement will be omitted in the following bullet points)
+ evaluate three children of the root. Very fortunately they all agree. We are done.
+ 2. We evaluate the first three children and they disagree. The fourth one leads to an agreement. We are done.
+ 3. We evaluate the first three -- they disagree. The fourth one still does not lead to an agreement. Evaluate the final one. We are done.
+
+The first case means that we have evaluated three children. Each children takes expectedly $f(h-1)$ leaf evaluations to be evaluated -- in total
+$3 f(h-1)$ leaf evaluations expectedly. Similarly the second case means we have $4 f(h-1)$ leaf evaluations expectedly. Similarly
+the third case means that we have expectedly $5 f(h-1)$ leaf evaluations. Now since the value of any node is essentially a coin flip,
+we can now calculate the probability of the cases.
+
+ 1. The first case. The denominator is $2^3$ since we evaluated three values. Each value is essentially a fair coin, and we want them
+ to be either all tails or all heads. There are two cases: all tails and all heads. The numerator is $2$.
+ 2. The second case. The denominator is $2^4$ by similar logic. Consider the evaluations in order (after essentially shuffling) of the children,
+ the values can be one of the following six: 0111, 1011, 1101 (consensus -- 1), 1000, 0100, 0010 (consensus -- 0). Therefore the numerator is $6$.
+ 3. The third case. The denominator is $2^5$. To count for the numerator. The first four values obtained from the evaluations must have two 1s and two 0s,
+ and the final value can either be 1 or 0 (depending on the consensus value). Therefore the numerator is $\binom{4}{2}$ (choosing where to put the 1s in
+ the first four positions) times $2$, i.e. $\binom{4}{2} 2$.
+
+Therefore we have the following recurrence for $f(h)$:
+
+ - if $h = 0$, $f(h) = 1$
+ - otherwise, $f(h) = 3 f(h-1) \frac{2}{2^3} + 4 f(h-1) \frac{6}{2^4} + 5 f (h - 1) \frac{2\binom{4}{2}}{2^5}$
+
+Simplify the general case: we have $f(h) = \frac{33}{8}f(h-1)$. Therefore the closed form solution for $f(h)$ is $\frac{33}{8}^h$.
+Therefore for the input, we expectedly read $\frac{33}{8}^h$ leaves of the tree. We now transform this value:
+
+$$
+\frac{33}{8}^h = \frac{33}{8}^{\lg_5 n} = n^{\lg_5 \frac{33}{8}} \approx n^{0.88} < n^{0.9}
+$$
+
+Therefore obviously the expected number of leaves evaluated is at most $O(n^{0.9})$.
+
+
+[reference manual]: http://research.microsoft.com/en-us/um/people/daan/madoko/doc/reference.html  "Madoko reference manual"
