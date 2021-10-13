@@ -6,17 +6,51 @@ Logo          : True
 
 ## 18.A.
 
-We prove a stronger proposition.
+We prove the following proposition.
 
 ~ Proposition
-For any deterministic algorithm, for any integer $h \geq 0$, there exists a tree (that is a valid rooted tree described in the problem)
-of height $h$ that forces the algorithm to read all $n = 5^h$ leaves. Moreover, we can force this algorithm to output either 1 or 0 at
-our choice.
+For any deterministic algorithm, for any integer $h \geq 0$, for a tree (that is a valid rooted tree described in the problem)
+of height $h$, there exists an adversary (filling out the leaf labels) that forces the algorithm to read all $n = 5^h$ leaves.
+In addition, this adversarial algorithm satisfies the following property: even if the algorithm knows $n - 1$
+leaf labels, the adversary can force the algorithm to output any output of our desire (0 or 1) by choosing the $n$-th
+leaf label at our pleasure (I think this is implied by the assumption, but it never hurts to additionally assume it).
+Let this adversary be denoted as $A(h)$.
 ~
 
 ~ Proof
-We prove by structural induction. We start with our strong induction base cases. Consider the base cases of $h = 0, 1$
+We prove by strong induction on $h$. We start with our strong induction base cases.
+Consider the base cases of $h = 0, 1$.
+We can obviously construct $A(0)$: the algorithm must evaluate the only leaf, and
+the adversary can assign the label at our pleasure to force the algorithm to
+output any output. When $h = 1$,
+the adversary first returns 0 upon the first leaf query, then 1, then 0, then 1, which
+forces the algorithm to query the fifth leaf. For the fifth leaf query, the adversary labels
+the leaf to be either $1$ (if we want the algorithm to output 1) or $0$ (if
+we want the algorithm to output 0). Thus
+we have now invented an adversary $A(1)$. We are done with
+the base cases.
+
+Now we do the inductive case.
+Let $h > 1$, consider the five children of the root, all of which has height $h - 1$.
+Initialize five $A(h-1)$ adversaries and assign each of them to the five children
+in any order (we have these adversaries by induction). For getting the value of the root,
+the algorithm must first evaluate three of the children (of the root). Because we have
+valid adversaries for the children (that have height $h - 1$), the adversaries will force
+the algorithm to evaluate $3 \cdot 5^{h-1}$ leaves. Moreover, we can force arbitrary
+evaluation results of the three children no matter how the algorithm queries the leaf node
+labels (we can always change the evaluation results "last minute" due to properties
+of the adversaries). We force the results to be 0, 0, 1. The algorithm must evaluate
+a fourth child, and by a similar argument this child can be forced to have evaluation 1.
+The fifth child also needs to have all its leaves evaluated -- $5^{h-1}$ leaves in total,
+and this fifth child can be forced to have arbitrary evaluation by the induction assumption.
+Moreover, if the algorithm only evaluated $5^{h}-1$ nodes, this implies that for one immediate
+subtree of the root, it has not been evaluated and we can force any evaluation of that subtree's root.
+The other four subtrees and their roots can be forced to have evaluations 0, 0, 1, 1, and we can force
+any evaluation at our wish by forcing the evaluation of the subtree that has not been evaluated yet.
+Therefore we have proven our inductive case.
 ~
+
+The above proposition implies that for arbitrary $h$ we can constuct an adversary as desired.
 
 ## 18.B.
 
